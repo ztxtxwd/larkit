@@ -1,0 +1,46 @@
+{
+  "_source": "飞书 Linux 客户端 webcontent/jssdk（worklet 信令层）运行时配置提取 + 实测验证",
+  "gateway": {
+    "fetchURL": "https://internal-api-lark-api.feishu.cn/im/gateway/",
+    "transport": "POST application/x-protobuf",
+    "body": "improto.Packet{cmd, cid=requestId, payloadType=PB2(=1), payload=业务 proto 字节}",
+    "note": "只路由 PUT 类写命令（5/13/7004/7025/7026 等）；PULL/GET/MGET 读命令（1/7/33/1020）不路由或 fallback 到 PullFeedGroups"
+  },
+  "internalApi": "https://internal-api.feishu.cn",
+  "openApi": "https://open.feishu.cn",
+  "ticketURL": "https://{passportHost}/suite/passport/frontier_ticket/",
+  "webClient": "https://www.feishu.cn/messenger",
+  "actionCardApis": {
+    "v2_0": "https://{openHost}/open-apis/api/v2/message/action",
+    "v2_1": "https://{openHost}/open-apis/card/api/actionv2",
+    "v2_2": "https://internal-api.feishu.cn/lark/card/api/actionv2",
+    "v3": "https://{openHost}/open-apis/message/v3/action",
+    "vote": "https://{openHost}/lark-vote/Vote"
+  },
+  "actionCardActionV2Body": {
+    "common": { "uid": "<用户数字uid>", "mid": "<消息数字id>", "card_id": "<卡片数字id>" },
+    "action": {
+      "creator_tenant_id": "<卡片创建者租户数字id>",
+      "action_id": "act_v1_<...>",
+      "refresh_token": "<uuid>",
+      "card_schema": "1"
+    },
+    "note": "card_id/action_id/refresh_token 由服务端在卡片消息推送（PUSH_MESSAGES 6）的 content.cardEntity 里下发"
+  },
+  "commandWebVersions": {
+    "_note": "x-command-version 命令级覆盖；默认 DEFAULT_WEB_VERSION=7.61.0",
+    "5": "7.67.0",
+    "13": "2.7.0",
+    "105": "7.69.0",
+    "11021": "2.7.0",
+    "11106": "7.60.0"
+  },
+  "defaultGatewayHeaders": {
+    "x-appid": "161471",
+    "x-lgw-os-type": "3",
+    "x-lgw-terminal-type": "2",
+    "x-lgw-req-sdk-type": "220",
+    "x-lsc-bizid": "1",
+    "x-lsc-version": "1"
+  }
+}

@@ -1,0 +1,31 @@
+name = "larkit-truth-api"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+workers_dev = true
+
+# 真相源对象（manifest.json / <tag>.json / index.json + tar.gz 归档）
+[[r2_buckets]]
+binding = "TRUTH"
+bucket_name = "larkit-truth"
+
+[vars]
+# 归档的公开域名（R2 自定义域名）；Worker 会把 manifest 里的下载链接重写到它上面
+PUBLIC_BASE = "https://larkit.tapeless.eu.org"
+# 本 API 自己的公开地址，用于在 index 里生成 <tag> 的 API 链接
+PUBLIC_API = "https://larkit.tapeless.eu.org"
+
+# 固定入口：https://larkit.tapeless.eu.org/v1/truth/latest
+# 首选入口：和下载域名同一个 host，只管 /v1/*，其余路径继续由 R2 提供
+[[routes]]
+pattern = "larkit.tapeless.eu.org/v1/*"
+zone_name = "tapeless.eu.org"
+
+# 已下线的 core/code 分体归档：对象已从 R2 删除，但边缘仍可能命中 immutable 缓存
+# （最长 1 年）。这两条 route 让 Worker 直接回 410，绕开缓存。
+[[routes]]
+pattern = "larkit.tapeless.eu.org/larkit-truth-core-*"
+zone_name = "tapeless.eu.org"
+
+[[routes]]
+pattern = "larkit.tapeless.eu.org/larkit-truth-code-*"
+zone_name = "tapeless.eu.org"

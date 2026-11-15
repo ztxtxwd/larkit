@@ -1,0 +1,8 @@
+{
+  "webAppKey": "5f45da0e6c7a17dcba80494ef0ab9b21",
+  "accessKeySalt": "f8a69f1719916z",
+  "baseUrl": "wss://msg-frontier.feishu.cn/ws/v2",
+  "ticketUrl": "https://login.feishu.cn/suite/passport/frontier_ticket/",
+  "sdkVersion": "7.68.5",
+  "origin": "https://www.feishu.cn"
+}

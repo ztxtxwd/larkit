@@ -1,0 +1,12 @@
+{
+  "defaultProfile": "geren",
+  "console": {
+    "profile": "geren"
+  },
+  "apps": {
+    "my-app": {
+      "app_id": "cli_xxxxxxxxxxxxxxxx",
+      "app_secret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+  }
+}

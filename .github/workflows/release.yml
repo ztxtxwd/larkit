@@ -1,0 +1,93 @@
+name: release
+
+# larkit 只有一个发行形态：lean 包。
+# 真相源（truth.db + 代码语料，161 MB 单归档）由维护者在本机构建并发布到 R2，
+# 客户端首次运行/自动更新时下载，和 npm 发版完全解耦（见 README §14）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      dist_tag:
+        description: npm dist-tag (latest / next / beta)
+        default: latest
+        required: false
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  id-token: write # npm provenance / trusted publishing
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      LARKIT_HOME: ${{ github.workspace }}/.larkit-home
+      TRUTH_CHANNEL: ${{ vars.LARKIT_TRUTH_PACK_URL || 'https://larkit.tapeless.eu.org/v1/truth/latest' }}
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: node scripts/check-syntax.mjs
+
+      # 包体只有 1.2 MB：没有任何真相源可打包/可校验。
+      - name: Show package shape
+        run: |
+          npm pack --dry-run 2>&1 | grep -E "package size|total files" || true
+          test ! -d assets/truth || { echo "::error::assets/truth must not be committed"; exit 1; }
+
+      - name: Truth channel is live
+        run: |
+          curl -fsS --max-time 20 "$TRUTH_CHANNEL" > /tmp/latest.json
+          node -e '
+            const m = require("/tmp/latest.json");
+            const tier = m.tiers?.full;
+            if (!tier) { console.error("channel has no full tier"); process.exit(1); }
+            console.log(`channel ${m.packVersion} · ${(tier.bytes / 1048576).toFixed(1)} MiB · ${tier.sha256.slice(0, 16)}…`);
+          '
+
+      - name: Check this version is not published yet
+        run: |
+          VERSION="$(node -p 'require("./package.json").version')"
+          if npm view "larkit@${VERSION}" version >/dev/null 2>&1; then
+            echo "::error::larkit@${VERSION} already exists on npm; bump package.json first"
+            exit 1
+          fi
+          echo "publishing larkit@${VERSION}"
+
+      - name: npm publish
+        run: |
+          ARGS="--provenance --access public"
+          if [ -n "${{ inputs.dist_tag }}" ] && [ "${{ inputs.dist_tag }}" != "latest" ]; then
+            ARGS="$ARGS --tag=${{ inputs.dist_tag }}"
+          fi
+          npm publish $ARGS
+
+      - name: Summary
+        run: |
+          {
+            echo "### published"
+            echo "- \`larkit@$(node -p 'require("./package.json").version')\`"
+            echo "- dist-tag: \`${{ inputs.dist_tag || 'latest' }}\`"
+            echo "- truth channel: $TRUTH_CHANNEL"
+            echo "- package size: $(npm pack --dry-run 2>&1 | grep -oE 'package size: [0-9.]+ MB' | head -1)"
+          } >> "$GITHUB_STEP_SUMMARY"
