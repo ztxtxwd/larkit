@@ -30,7 +30,8 @@ jobs:
     env:
       LARKIT_HOME: ${{ github.workspace }}/.larkit-home
       TRUTH_CHANNEL: ${{ vars.LARKIT_TRUTH_PACK_URL || 'https://larkit.tapeless.eu.org/v1/truth/latest' }}
-      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    # 认证只走 OIDC trusted publishing：不再注入 NODE_AUTH_TOKEN。
+    # 环境里只要存在 npm token，npm 就会优先用 token、跳过 OIDC，provenance 也就不是 OIDC 签名。
 
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +44,20 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-          registry-url: https://registry.npmjs.org
+
+      # 故意不设 registry-url：setup-node 会因此写一行 _authToken=${NODE_AUTH_TOKEN} 到 .npmrc，
+      # 空 token 会让 npm 发出空的 Bearer 头并跳过 OIDC。
+      - name: Ensure OIDC-only npm auth
+        run: |
+          npm config delete //registry.npmjs.org/:_authToken || true
+          npm config delete //registry.npmjs.org/:always-auth || true
+          if grep -qE '_authToken|always-auth' ~/.npmrc 2>/dev/null; then
+            echo "::error::~/.npmrc still carries an npm token; trusted publishing would be bypassed"
+            exit 1
+          fi
+          test -z "${NODE_AUTH_TOKEN:-}" || { echo "::error::NODE_AUTH_TOKEN must be unset"; exit 1; }
+          echo "npm auth: OIDC trusted publishing"
+          echo "id-token endpoint: ${ACTIONS_ID_TOKEN_REQUEST_URL:+present}"
 
       - run: pnpm install --frozen-lockfile
 

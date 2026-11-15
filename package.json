@@ -1,6 +1,6 @@
 {
   "name": "larkit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "飞书全栈真相引擎与一站式 Agent 开发工具包（MCP Server + CLI）",
   "type": "module",
   "bin": {
